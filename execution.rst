@@ -1,0 +1,170 @@
+Exécution
+=========
+
+Maintenant que vous avez un AST, il faut en faire quelque chose.
+Il vous faut parcourir récursivement votre AST, en effectuant les actions associées pour chaque nœud.
+
+ - L'exécution d'un nœeud retourne un entier, qui représente le succès de l'opération s'il vaut zéro,
+   un échec autrement. Vu que vous n'exécuterez toujours qu'un nœuds à la fois, vous pouvez en faire 
+   une valeur globale.
+
+ - Certaines de ces instructions, comme ``mavariable=valeur`` modifient des variables shell. Il vous faut
+   alors modifier la table de hash associant le nom de la variable à sa valeur en conséquence.
+
+ - Certaines chaines de caractère, au contraire, vont accéder à ces variables durant le processus
+   d'expansion, détaillé plus tard.
+
+L'expansion
+-----------
+
+L'expansion, c'est le processus qui permet de passer d'une chaine de caractère non traitée, comme 
+``"$mavariable"`` à sa version finale, cad ``valeurdemavariable``.
+
+Ce processus implique entre autres :
+
+  - le traitement particulier des différents types d'échapement (``'"``)
+  - le parsing des subshells (``$()``)
+  - le parsing de l'expansion arithmétique (``$(())``)
+  - l'expansion de variables (``$mavariable``)
+  - la découpe du résultat avec l'IFS, dans les portions du mot où c'est applicable.
+    par exemple: ``a='un test'; printf 'mot: %s\n' 'ceci est'$a``
+    mais ``a='un test'; printf 'mot: %s\n' 'ceci est'"$a"``
+
+Il s'agit en fait de parcourir les mots comme lors du lexing, mais en les traduisant cette fois-ci
+en opérations concrètes.
+
+La méthode sale
+~~~~~~~~~~~~~~~
+
+Vous devez faire la même chose que le lexer, mais celui-ci n'est pas assez modulaire ? Copié collé,
+modifié, et hop !
+
+La méthode propre
+~~~~~~~~~~~~~~~~~
+
+Si vous avez suivi la méthode propre du lexer, vous devriez avoir une base commune permettant
+d'implémenter l'expansion sans trop de diffiicultés.
+
+Les commandes
+-------------
+
+Les redirections
+~~~~~~~~~~~~~~~~
+
+.. code-block:: none
+
+                      terminal
+
+                      +   ^   ^
+  +--------+---+      |   |   |
+  |        | 0 +<-----+   |   |
+  |        +---+          |   |
+  |        | 1 +----------+   |
+  |   sh   +---+              |
+  |        | 2 +--------------+
+  |        +---+
+  |        | … |
+  +--------+---+
+
+
+Le schéma ci-dessus représente un scénario typique d'exécution d'un shell. Celui-ci lit ses commandes depuis stdin (file descriptor 0), écrit normalement sur stdout (file descriptor 1), et sur stderr (file descriptor 2) en cas d'erreur.
+
+Chaque process dispose d'un tableau de pointeurs vers des ressources. Ce tableau n'étant pas directement accessible, on utilise à la place l'index dans ce tableau. Cet index est appelé file descriptor.
+
+Après un ``open("monfichier")``, ce tableau aura été transformé comme suit:
+
+.. code-block:: none
+
+                      terminal
+
+                      +   ^   ^
+  +--------+---+      |   |   |
+  |        | 0 +<-----+   |   |
+  |        +---+          |   |
+  |        | 1 +----------+   |
+  |   sh   +---+              |
+  |        | 2 +--------------+
+  |        +---+                    +------------+
+  |        | 3 +------------------->+ monfichier |
+  +--------+---+                    +------------+
+
+On peut effectuer différentes opérations sur ce tableau:
+
+ - ``close(fd)`` supprime un lien
+ - ``dup(fd)`` fait une copie du lien
+ - ``dup2(oldfd, newfd)`` fait une copie de oldfd, et la met à l'index de newfd. si la case est déjà prise, l'ancien fd est close.
+
+Après un ``dup2(3, 2)``, le nouvel état sera:
+
+.. code-block:: none
+
+                      terminal
+
+                      +   ^
+  +--------+---+      |   |
+  |        | 0 +<-----+   |
+  |        +---+          |
+  |        | 1 +----------+
+  |   sh   +---+
+  |        | 2 +------------+
+  |        +---+        +---v--------+
+  |        | 3 +------->+ monfichier |
+  +--------+---+        +------------+
+
+Après un ``close(3)`` le nouvel état sera:
+
+.. code-block:: none
+
+                      terminal
+
+                      +   ^
+  +--------+---+      |   |
+  |        | 0 +<-----+   |
+  |        +---+          |
+  |        | 1 +----------+
+  |   sh   +---+
+  |        | 2 +------------+
+  |        +---+        +---v--------+
+  |        | 3 |        | monfichier |
+  +--------+---+        +------------+
+
+Ce qui est plus ou moins équivent à l'état nécessaire à un ``sh 2>monfichier``.
+
+Attention toutefois ! les redirections doivent pouvoir être annulées. Il faut dupliquer le file descriptor qui va être écrasé par le dup2 pour pouvoir ensuite le restaurer. Sinon, les redirections persisteront pendant le reste de l'exécution du shell. On peut être tenté d'exécuter les redirections après avoir fork pour exécuter une commande, mais cela ne fonctionnera pas lorsqu'on ne fork pas (lors de l'exécution des fonctions et des builtins).
+
+Les variables locales à une commande
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Lorsque vous faites ``a=b macommande``, la variable a ne vaudra b que pendant l'exécution de ``macommande``. Attention toutefois, si macommande est une fonction, cette règle ne s'applique pas, et il n'est pas nécessaire de restaurer la valeur de a.
+
+Les fonctions
+~~~~~~~~~~~~~
+
+Les fonctions ne devraient pas être gérées différemment du reste des programmes:
+la fonction en charge de lancer une commande vérifie d'abord si une fonction du même nom existe, et l'appelle si besoin.
+
+Si votre AST a du reference counting, c'est le moment de l'utiliser pour ne pas avoir à conserver l'ensemble des AST en mémoire.
+
+El pipe
+~~~~~~~
+
+``TODO``
+
+Mon programme fait N fois la même chose
+---------------------------------------
+
+Lorsqu'un sous shell se termine, il faut le quitter avec ``exit()`` ! Il continuera sinon de parcourir votre AST
+dans un autre process.
+
+
+La boucle read / eval
+---------------------
+
+Vous avez besoin de faire une boucle qui va soit lire une string et appeler votre parseur dessus,
+pour la méthode sale, soit appeller votre parseur avec un lexeur configuré avec un backend readline,
+pour la méthode propre.
+
+C'est aussi pas mal d'avoir un état, histoire de pouvoir se trimballer des fonctions / variables entre
+deux lignes / AST.
+
+Faites attention de ne pas free les bouts d'AST utilisés pour les fonctions.
