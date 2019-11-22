@@ -167,7 +167,10 @@ Les pipes
 
 `Conférences Redirection et Pipe 42SH - 2019 <https://www.youtube.com/watch?v=ceNaZzEoUhk>`_
 
-Attention, j'ai par erreur interverti les deux extrémités du pipe lors de la conférence (``fd[0]`` et ``fd[1]``)
+**Errata**:
+
+- j'ai par erreur interverti les deux extrémités du pipe lors de la conférence (``fd[0]`` et ``fd[1]``)
+- il est préférable de marquer les sauvegardes de file descriptor avec ``CLOEXEC`` pour éviter que les process enfants en héritent
 
 Mon programme fait N fois la même chose
 ---------------------------------------
