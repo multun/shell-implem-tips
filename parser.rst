@@ -29,7 +29,8 @@ Quelques pistes:
 dans l'exemple précédent, lire le premier token de la ligne ne suffit pas à savoir s'il s'agit d'une commande ou d'une définition de fonction.
 
 
-## Exemple de fonction de parsing
+Exemple de fonction de parsing
+------------------------------
 
 Une manière raisonnable d'écrire des fonctions de parsing est la suivante :
 
