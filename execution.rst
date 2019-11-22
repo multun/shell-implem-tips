@@ -172,6 +172,23 @@ Les pipes
 - j'ai par erreur interverti les deux extrémités du pipe lors de la conférence (``fd[0]`` et ``fd[1]``)
 - il est préférable de marquer les sauvegardes de file descriptor avec ``CLOEXEC`` pour éviter que les process enfants en héritent
 
+Pipelines
+~~~~~~~~~
+
+La manière la plus simple d'exécuter une suite de pipes se fait de la même manière qu'on exécute une opérateur pipe binaire:
+
+.. code-block:: none
+
+   a | b | c
+
+       |
+      / \
+     |   c
+    / \
+   a   b
+
+on exécute d'abord le nœud pipe racine, puis les autres, récursivement. Comme n'importe quel autre nœud d'ast.
+
 Mon programme fait N fois la même chose
 ---------------------------------------
 

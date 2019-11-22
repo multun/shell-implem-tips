@@ -124,7 +124,7 @@ Un nœud d'AST pourrait ressembler à la chose suivante :
       {
           struct node_if node_if;
           struct node_command node_command;
-          ...
+          /* ... */
       } data;
   };
 
