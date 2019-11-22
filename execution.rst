@@ -48,8 +48,25 @@ d'implémenter l'expansion sans trop de diffiicultés.
 Les commandes
 -------------
 
+Les commandes sont composées de trois éléments:
+
+- des assignations
+- des arguments
+- des redirections
+
+Lors du parsing, ces trois types d'éléments sont ajoutés dans trois tableaux.
+Lors de l'exécution, ces éléments sont traités dans l'ordre suivant:
+
+- les redirections sont effectuées de gauche à droite
+- les arguments de la commande sont expand (``echo $var`` est transformé en ``echo varcontent``)
+- les assignations sont effectuées (après le fork si il existe, tant pis sinon)
+- la commande est exécutée
+- les redirections sont annulées
+
 Les redirections
-~~~~~~~~~~~~~~~~
+----------------
+
+`Conférences Redirection et Pipe 42SH - 2019 <https://www.youtube.com/watch?v=ceNaZzEoUhk>`_
 
 .. code-block:: none
 
@@ -145,10 +162,12 @@ la fonction en charge de lancer une commande vérifie d'abord si une fonction du
 
 Si votre AST a du reference counting, c'est le moment de l'utiliser pour ne pas avoir à conserver l'ensemble des AST en mémoire.
 
-El pipe
-~~~~~~~
+Les pipes
+---------
 
-``TODO``
+`Conférences Redirection et Pipe 42SH - 2019 <https://www.youtube.com/watch?v=ceNaZzEoUhk>`_
+
+Attention, j'ai par erreur interverti les deux extrémités du pipe lors de la conférence (``fd[0]`` et ``fd[1]``)
 
 Mon programme fait N fois la même chose
 ---------------------------------------
