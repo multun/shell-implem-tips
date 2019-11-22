@@ -10,10 +10,16 @@ C'est probablement la partie la plus dure à faire parfaitement.
  - Beaucoup de tests
  - Testez ce que vous ne savez pas
 
-Méthode sale
-------------
+Méthode simple
+--------------
 
-Tu trouves une quote, tu cherches la suivante, cas particulier pour les séquences d'échappement, point.
+Voici un algorithme de lexing minimal :
+
+1) On saute les espaces
+2) Si le caractère actuel commence un opérateur, on lexe et retourne un nouveau token
+3) Sinon, on fait partie d'un mot. On continue à lexer tant que le caractère n'est pas une opérateur / un espace.
+
+Cet algorithme ne gère pas les quotes. Il est fortement conseillé d'utiliser une approche récursive pour gérer celles-ci.
 
 Méthode propre
 --------------
