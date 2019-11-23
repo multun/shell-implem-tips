@@ -189,12 +189,6 @@ La manière la plus simple d'exécuter une suite de pipes se fait de la même ma
 
 on exécute d'abord le nœud pipe racine, puis les autres, récursivement. Comme n'importe quel autre nœud d'ast.
 
-Mon programme fait N fois la même chose
----------------------------------------
-
-Lorsqu'un sous shell se termine, il faut le quitter avec ``exit()`` ! Il continuera sinon de parcourir votre AST
-dans un autre process.
-
 
 La boucle read / eval
 ---------------------
@@ -207,3 +201,74 @@ C'est aussi pas mal d'avoir un état, histoire de pouvoir se trimballer des fonc
 deux lignes / AST.
 
 Faites attention de ne pas free les bouts d'AST utilisés pour les fonctions.
+
+
+FAQ
+---
+
+Mon programme fait N fois la même chose
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Quand l'exécution d'une commande rate (``execvpe`` n'a pas fonctionné) ou qu'un sous-shell se termine,
+le processus créé par ``fork`` est toujours là. Il faut afficher un message d'erreur
+et ``exit`` avec le bon code de retour.
+
+
+Les dernières lignes de mon fichier sont lues plusieurs fois
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Si le fichier depuis lequel vous lisez les commandes n'est pas
+close avant d'``exit``, la bibliothèque standard va lseek vers le début du fichier
+pour prendre en compte le fait que des données on été lues en avance par le buffering.
+
+Étant donné que le process parent partage le descripteur de fichier, le ``lseek``
+agira également sur son instance de fichier ouvert. Quand le parent aura vidé son buffer,
+il lira à nouveau dans le fichier à partir de l'index corrigé par le fils.
+
+À vous d'utiliser l'exemple suivant pour régler votre problème:
+
+  .. code-block:: c
+
+    #define _GNU_SOURCE
+
+    #include <stdio.h>
+    #include <stdlib.h>
+    #include <unistd.h>
+
+    #include <sys/types.h>
+    #include <sys/wait.h>
+    #include <fcntl.h>
+
+    static ssize_t next_line(FILE *f)
+    {
+        char *line = NULL;
+        size_t size = 0;
+        ssize_t line_size = 0;
+        if ((line_size = getline(&line, &size, f)) <= 0)
+            printf("no more lines\n");
+        else
+            printf("> %.*s\n", (int)line_size, line);
+        free(line);
+        return line_size;
+    }
+
+    int main(void)
+    {
+        FILE *f = fopen("test.txt", "r+");
+
+        next_line(f);
+        pid_t pid = fork();
+        if (pid == 0) {
+            // UNCOMMENT ME: fclose(f);
+            return 2;
+        }
+
+        int status;
+        waitpid(pid, &status, 0);
+        printf("child exited with status %d\n", WEXITSTATUS(status));
+
+        while (next_line(f) > 0)
+            continue;
+
+        fclose(f);
+    }
