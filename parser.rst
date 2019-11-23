@@ -229,26 +229,36 @@ Voici un exemple d'usage de ce type d'ast :
       return ast_free_func[ast_node->type](node);
   }
 
-Ne pas leak
------------
+Simplifier sa gestion d'erreur
+------------------------------
 
-La méthode facile
-~~~~~~~~~~~~~~~~~
+Un des éléments les plus problématiques du parseur shell est sa gestion d'erreur:
+pratiquement chaque opération peut mener à une erreur qu'il faudrait prendre en charge.
 
-Vos pouvez rajouter une liste d'addresses à free à votre AST. C'est réglo et une vraie technique. Par contre,
-mettre cette liste dans une variable globale / indépendante de l'AST l'est beaucoup moins.
+Il faut donc trouver des moyens de rendre plus simple sa gestion d'erreur.
 
-La méthode fun
-~~~~~~~~~~~~~~
+Le free par le haut
+~~~~~~~~~~~~~~~~~~~
 
-Implémentez des exceptions (setjmp / longjmp), réclamez votre AST par le haut de votre pile d'appel. Attention
-dans ce cas à rattacher toutes vos allocations à votre arbre, à tout instant. Votre mémoire doit également être
-initializée à 0 pour éviter de faire travailler votre fonction de free sur des zones mémoire non initializées.
+La méthode la plus souvent utilisée pour allouer des AST implique de retourner le nœud créé par la fonction de parsing.
+Ainsi, en cas d'erreur, cette fonction devra se charger de libérer toute la mémoire déjà allouée.
 
-**/!\\ Attention, ça vous apportera quelques bugs de l'horreur /!\\**
+Une méthode moins lourde est de passer en argument l'endroit où rattacher le nœud d'ast à créer. Ainsi, en cas d'erreur,
+on peut directement sortir de la fonction sans free, et appeller une seule fois une fonction de free après être sorti du parseur.
 
-Violer la coding style
-----------------------
+Vous pouvez voir un exemple de cette technique dans la fonction de parsing plus haut.
 
-Soyez inventifs. C'est un parseur, ça vous arrivera une ou deux fois d'être vraiment dans la merde. Si ça vous
-arrive beaucoup plus souvent, c'est de votre faute.
+La méthode des free list
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+Vos pouvez rajouter une liste d'addresses à free à votre AST. La méthode est peu élégante mais efficace.
+Mettre cette liste dans une variable globale / indépendante de l'AST est par contre absurde.
+
+La méthode des exceptions
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Implémentez des exceptions (setjmp / longjmp) permet de ne pas avoir à vérifier à la main le code de retour des fonctions appelées.
+Si une erreur fatale se produit, le parseur s'arrêtera. Il est nécessaire de combiner cette méthode avec celle du free par le haut
+pour éviter les leaks.
+
+**/!\\ Attention, cette méthode est très pratique mais difficile à implémenter /!\\**
