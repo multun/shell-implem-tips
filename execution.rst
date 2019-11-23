@@ -155,12 +155,31 @@ Les variables locales à une commande
 Lorsque vous faites ``a=b macommande``, la variable a ne vaudra b que pendant l'exécution de ``macommande``. Attention toutefois, si macommande est une fonction, cette règle ne s'applique pas, et il n'est pas nécessaire de restaurer la valeur de a.
 
 Les fonctions
-~~~~~~~~~~~~~
+-------------
 
-Les fonctions ne devraient pas être gérées différemment du reste des programmes:
-la fonction en charge de lancer une commande vérifie d'abord si une fonction du même nom existe, et l'appelle si besoin.
+Le support des fonction se décompose en deux partie. Leur définition, et leur appel.
 
-Si votre AST a du reference counting, c'est le moment de l'utiliser pour ne pas avoir à conserver l'ensemble des AST en mémoire.
+Définition
+~~~~~~~~~~
+Lors de l'exécution, il faut soit recopier le bout d'ast du corps de la fonction dans un tableau associant le nom de la fonction à son code.
+
+Il y a plusieurs moyen de faire en sorte que le bout d'AST de la fonction ne soit pas free avec le reste:
+
+- le retirer de l'AST
+- le marquer comme ne devant pas être free d'une manière ou d'une autre
+- faire du reference counting
+- garder les AST de toutes les commandes en mémoire (plutôt bof)
+
+La première méthode est sûrement la plus simple.
+
+Appel
+~~~~~
+Les fonctions sont gérées légèrement différemment du reste des commandes simples, sans pour autant diverger énorment :
+la fonction en charge de lancer une commande vérifie d'abord si une fonction du nom demandé existe, et l'appelle si c'est le cas.
+dans le cas contraire, le processus continue comme à son habitude.
+
+Les redirections sont effectuées comme d'habitude, et si les assignations doivent être visibles à l'intérieur de la fonction,
+elles peuvent aussi l'être une fois l'appel terminé (au choix).
 
 Les pipes
 ---------
