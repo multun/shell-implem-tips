@@ -172,6 +172,18 @@ Les pipes
 - j'ai par erreur interverti les deux extrémités du pipe lors de la conférence (``fd[0]`` et ``fd[1]``)
 - il est préférable de marquer les sauvegardes de file descriptor avec ``CLOEXEC`` pour éviter que les process enfants en héritent
 
+.. admonition:: Allez plus loin
+
+  La conférence présente une version volontairement simplifiée de l'algorithme, qui considère que le pipe est un opérateur binaire.
+  C'est tout à fait acceptable et fonctionnel, mais devient problématique si vous souhaitez implémenter du job control.
+
+  **Attention, le job control est une fonctionnalité très avancée**
+
+  https://www.linusakesson.net/programming/tty/index.php
+
+  https://blog.nelhage.com/2010/01/a-brief-introduction-to-termios-signaling-and-job-control/
+
+
 Pipelines
 ~~~~~~~~~
 
