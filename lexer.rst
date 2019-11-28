@@ -38,3 +38,25 @@ promesse future de mot.
 
 Une solution intéressante peut être de construire deux lexeurs, le premier servant de base commune au second et
 à l'expansion.
+
+
+Les alias
+---------
+
+Les alias sont gérés lors du lexing. L'environnement d'exécution contient un tableau associant le nom de l'alias à la liste de tokens qui devront le remplacer.
+
+Considérez l'exemple suivant:
+
+.. code-block:: shell
+
+   alias oops='mafonction ('
+   oops) {
+     echo hm
+   }
+
+Le shell fait comme suit:
+
+1) il parse la première commande comme le mot alias suivit d'un unique argument: ``oops=mafonction (``.
+2) il exécute la première commande, qui rajoute enregistre ``oops`` dans la table des alias. La valeur de l'alias est lexée pour pouvoir être plus facilement substituée par la suite.
+3) il commence à parser la seconde ligne. Comme le token oops commence une commande, le shell regarde si il existe un alias à ce nom. comme c'est le cas, il remplace le token par la liste de tokens contenue dans l'alias.
+4) ``mafonction`` commence une commande. Il n'y a pas d'alias à ce nom, le parsing continue. Une fonction est reconnue.
