@@ -5,7 +5,7 @@ Maintenant que vous avez un AST, il faut en faire quelque chose.
 Il vous faut parcourir récursivement votre AST, en effectuant les actions associées pour chaque nœud.
 
  - L'exécution d'un nœeud retourne un entier, qui représente le succès de l'opération s'il vaut zéro,
-   un échec autrement. Vu que vous n'exécuterez toujours qu'un nœuds à la fois, vous pouvez en faire 
+   un échec autrement. Vu que vous n'exécuterez toujours qu'un nœuds à la fois, vous pouvez en faire
    une valeur globale.
 
  - Certaines de ces instructions, comme ``mavariable=valeur`` modifient des variables shell. Il vous faut
@@ -17,7 +17,7 @@ Il vous faut parcourir récursivement votre AST, en effectuant les actions assoc
 L'expansion
 -----------
 
-L'expansion, c'est le processus qui permet de passer d'une chaine de caractère non traitée, comme 
+L'expansion, c'est le processus qui permet de passer d'une chaine de caractère non traitée, comme
 ``"$mavariable"`` à sa version finale, cad ``valeurdemavariable``.
 
 Ce processus implique entre autres :
@@ -33,17 +33,31 @@ Ce processus implique entre autres :
 Il s'agit en fait de parcourir les mots comme lors du lexing, mais en les traduisant cette fois-ci
 en opérations concrètes.
 
-La méthode sale
-~~~~~~~~~~~~~~~
+Deux solutions possibles:
 
-Vous devez faire la même chose que le lexer, mais celui-ci n'est pas assez modulaire ? Copié collé,
-modifié, et hop !
+ - Vous devez faire la même chose que le lexer, mais celui-ci n'est pas assez modulaire ? Copié collé, modifié, et hop !
+ - Si vous avez suivi la méthode propre du lexer, vous devriez avoir une base commune permettant d'implémenter l'expansion sans trop de diffiicultés.
 
-La méthode propre
-~~~~~~~~~~~~~~~~~
+Les command substitutions
+~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Si vous avez suivi la méthode propre du lexer, vous devriez avoir une base commune permettant
-d'implémenter l'expansion sans trop de diffiicultés.
+Les substitutions de commande se présentent sous deux formes:
+
+ - :literal:`echo \`subshell\``
+ - :literal:`echo $(subshell)`
+
+Analyse
+#######
+
+L'exécution de la première forme ne requiert pas de précaution particulière. Lorsque le premier backtick est rencontré, on cherche simplement celui de fin.
+La deuxième forme est plus complexe à délimiter. Il faut relancer un lexeur à partir du ``$(`` ouvrant, lancer le subshell avec comme donnée le résultat du lexing, et recommencer l'expansion là où il s'est terminé.
+
+Exécution
+#########
+
+On crée un pipe, on fork, on attache la sortie standard du fils dans l'entrée du pipe et on lit dans la sortie avec le parent.
+Le fils parse, lexe et exécute ensuite le contenu du subshell, dans un boucle. Il est important d'exit et de ne pas continuer d'exécuter l'ast dans le fils une fois terminé.
+Le parent lit les données du fils et les rajoute dans le résultat d'expansion. Une fois la lecture terminée, il wait le process et continue l'expansion.
 
 Les commandes
 -------------
