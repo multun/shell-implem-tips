@@ -228,7 +228,7 @@ Les pipes
 Pipelines
 ~~~~~~~~~
 
-La manière la plus simple d'exécuter une suite de pipes se fait de la même manière qu'on exécute une opérateur pipe binaire:
+La manière la plus simple d'exécuter une suite de pipes se fait de la même manière qu'on exécute un opérateur pipe binaire:
 
 .. code-block:: none
 
