@@ -106,6 +106,7 @@ html_theme_options = {
     "github_user": "multun",
     "github_repo": "shell-implem-tips",
     "github_button": True,
+    "github_type": "star",
     # "description": "A Python package for assisting neural network production with TensorFlow.",
 }
 
