@@ -59,6 +59,14 @@ On crée un pipe, on fork, on attache la sortie standard du fils dans l'entrée 
 Le fils parse, lexe et exécute ensuite le contenu du subshell, dans un boucle. Il est important d'exit et de ne pas continuer d'exécuter l'ast dans le fils une fois terminé.
 Le parent lit les données du fils et les rajoute dans le résultat d'expansion. Une fois la lecture terminée, il wait le process et continue l'expansion.
 
+L'expansion arithmétique
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+L'expansion arithmétique du shell est définie comme suivant la spécification C. Il faut construire un mini lexeur et un mini parseur pour évaluer ces sections.
+Attention, il n'est pas nécessaire de faire un AST! tout peut être évalué au fur et à mesure si on utilise le bon type de parseur.
+
+`Les parseurs de pratt s'y prêtent particulièrement bien <https://github.com/multun/python-pratt-parser/>`_.
+
 Les commandes
 -------------
 
