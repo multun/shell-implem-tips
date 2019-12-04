@@ -60,3 +60,47 @@ Le shell fait comme suit:
 2) il exécute la première commande, qui rajoute enregistre ``oops`` dans la table des alias. La valeur de l'alias est lexée pour pouvoir être plus facilement substituée par la suite.
 3) il commence à parser la seconde ligne. Comme le token oops commence une commande, le shell regarde si il existe un alias à ce nom. comme c'est le cas, il remplace le token par la liste de tokens contenue dans l'alias.
 4) ``mafonction`` commence une commande. Il n'y a pas d'alias à ce nom, le parsing continue. Une fonction est reconnue.
+
+Quelques exemples de comportements importants:
+
+.. code-block:: shell
+
+   # les alias travaillent au niveau des tokens
+   alias atroce='func('
+   # la ligne suivante donne une erreur de syntaxe,
+   # car func(\n n'est pas du shell valide.
+
+   atroce  # ERROR: syntax error near unexpected token `newline'
+
+   # ceci est une déclaration de fonction valide.
+   # les tokens sont substitués car en début de ligne
+   atroce ) {
+       echo vraiment atroce
+   }
+
+   if true; then
+       alias machin='echo hm ok'
+
+       # la commande suivante n'est pas trouvée car
+       # l'alias n'était pas encore là quand le mot
+       # a été lexé.
+       machin  # ERROR: machin: command not found
+   fi
+
+   # l'alias déclaré au dessus est maintenant actif
+   machin  # "hm ok"
+
+   # ATTENTION: cet alias s'appelle lui-même.
+   # Cela doit être détecté lors de l'exécution.
+   alias echo='echo bidule'
+   alias machin='echo truc'
+
+   machin  # "bidule truc"
+
+   # les alias ne sont substitués qu'en début de ligne
+   printf '%s\n' echo  # "echo"
+
+   # la recherche d'alias se fait forcément avant l'expansion
+   # (on est au lexing). "\echo" n'est pas littéralement un nom
+   # d'alias, et ne le deviendra qu'après expansion.
+   \echo vrai echo  # "vrai echo"
